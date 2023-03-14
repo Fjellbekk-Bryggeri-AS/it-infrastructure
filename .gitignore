@@ -1,0 +1,27 @@
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+tfplan
+plan.txt
+init.log
+rapport.md
+crash.log
+crash.*.log
+.terraform.tfstate.lock.info
+
+# Lokale overstyringer og CLI-oppsett
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+
+# Hemmeligheter skal aldri ligge i en .tfvars-fil i dette repoet.
+*.tfvars
+*.tfvars.json
+
+# ...men miljøkonfigurasjonen i config/ er ikke hemmelig, og den SKAL
+# gjennom pull request som all annen kode.
+!terraform-projects/config/**/*.tfvars

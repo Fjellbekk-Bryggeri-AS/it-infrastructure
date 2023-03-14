@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 240" role="img" aria-label="Høstbrygg 2026 – nå på fat">
+  <defs>
+    <linearGradient id="himmel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2B4A3A"/>
+      <stop offset="1" stop-color="#1B2E25"/>
+    </linearGradient>
+  </defs>
+  <rect width="960" height="240" fill="url(#himmel)"/>
+  <path d="M0 240 L170 90 L290 190 L430 60 L600 200 L740 110 L960 240 Z" fill="#14231C"/>
+  <path d="M430 60 L470 96 L452 92 L430 110 L410 92 L392 96 Z" fill="#E8E2D2"/>
+  <circle cx="820" cy="64" r="26" fill="#E9B44C"/>
+  <text x="48" y="104" font-family="Georgia, serif" font-size="46" fill="#F4EFE3">Høstbrygg 2026</text>
+  <text x="50" y="146" font-family="Helvetica, Arial, sans-serif" font-size="22" fill="#E9B44C" letter-spacing="3">NÅ PÅ FAT · BEGRENSET OPPLAG</text>
+</svg>

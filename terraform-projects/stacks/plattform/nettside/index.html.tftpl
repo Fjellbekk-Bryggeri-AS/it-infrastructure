@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fjellbekk Bryggeri</title>
+  <style>
+    :root { --skog: #1B2E25; --mose: #2B4A3A; --krem: #F4EFE3; --rav: #E9B44C; --tekst: #1F2420; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Helvetica, Arial, sans-serif; color: var(--tekst); background: var(--krem); }
+    header { background: var(--skog); color: var(--krem); padding: 20px 32px; display: flex; align-items: baseline; gap: 16px; }
+    header h1 { font-family: Georgia, serif; font-weight: normal; margin: 0; font-size: 28px; }
+    header span { color: var(--rav); letter-spacing: 2px; font-size: 13px; }
+    .banner img { display: block; width: 100%; max-height: 260px; object-fit: cover; background: var(--mose); }
+    .kampanje { background: var(--rav); color: var(--skog); padding: 14px 32px; font-size: 20px; font-weight: bold; }
+    main { max-width: 960px; margin: 0 auto; padding: 32px; }
+    .produkter { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; }
+    .produkt { background: #fff; border-radius: 8px; padding: 20px; border-top: 6px solid var(--mose); }
+    .produkt h2 { margin: 0 0 6px; font-family: Georgia, serif; font-weight: normal; }
+    .produkt p { margin: 0 0 12px; color: #4A524C; }
+    .pris { font-weight: bold; }
+    footer { text-align: center; color: #6B726D; font-size: 13px; padding: 24px; }
+    .miljo { position: fixed; top: 16px; right: -48px; transform: rotate(45deg); background: #C0392B; color: #fff;
+             padding: 6px 60px; font-weight: bold; letter-spacing: 3px; }
+  </style>
+</head>
+<body>
+%{ if miljo != "prod" ~}
+  <div class="miljo">${upper(miljo)}</div>
+%{ endif ~}
+  <header>
+    <h1>Fjellbekk Bryggeri</h1>
+    <span>HÅNDVERKSØL FRA FJELLET SIDEN 1987</span>
+  </header>
+
+  <div class="banner">
+    <img src="${banner_url}" alt="Høstbrygg 2026 – nå på fat">
+  </div>
+
+  <div class="kampanje">${kampanjetekst}</div>
+
+  <main>
+    <div class="produkter">
+      <div class="produkt">
+        <h2>Fjellbekk Pils</h2>
+        <p>Lys, ren og kald som bekken den er oppkalt etter.</p>
+        <div class="pris">kr 49,- · 0,5 l</div>
+      </div>
+      <div class="produkt">
+        <h2>Myrull IPA</h2>
+        <p>Sitrus, furu og en bitterhet som varer.</p>
+        <div class="pris">kr 69,- · 0,5 l</div>
+      </div>
+      <div class="produkt">
+        <h2>Høstbrygg 2026</h2>
+        <p>Ravfarget, maltrik, med et hint av einer.</p>
+        <div class="pris">kr 79,- · 0,5 l</div>
+      </div>
+    </div>
+  </main>
+
+  <footer>Fjellbekk Bryggeri AS · nettbutikk v${nettside_versj} · miljø: ${miljo}</footer>
+</body>
+</html>

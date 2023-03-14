@@ -1,0 +1,33 @@
+#!/bin/bash
+# Kjøres av CustomScript-utvidelsen som root. Må tåle å kjøres mange ganger.
+set -euo pipefail
+
+if ! command -v nginx > /dev/null; then
+  apt-get update -q
+  DEBIAN_FRONTEND=noninteractive apt-get install -y -q nginx
+fi
+
+cat > /etc/nginx/sites-available/default <<'NGINX'
+server {
+  listen 80 default_server;
+  root /var/www/html;
+  index index.html;
+
+  location = /health.json {
+    add_header Access-Control-Allow-Origin "*" always;
+    add_header Cache-Control "no-store" always;
+  }
+}
+NGINX
+
+# Skriv til en midlertidig fil og flytt den på plass, så nginx aldri
+# serverer en halvskrevet side.
+echo '${index_b64}' | base64 -d > /var/www/html/index.html.ny
+mv /var/www/html/index.html.ny /var/www/html/index.html
+
+echo '${health_b64}' | base64 -d > /var/www/html/health.json.ny
+mv /var/www/html/health.json.ny /var/www/html/health.json
+
+nginx -t
+systemctl enable --now nginx
+systemctl reload nginx
