@@ -46,6 +46,20 @@ resource "azurerm_subnet" "web" {
   address_prefixes     = [cidrsubnet(var.address_space, 8, 1)]
 }
 
+resource "azurerm_subnet" "app" {
+  name                 = "snet-app"
+  resource_group_name  = azurerm_resource_group.nett.name
+  virtual_network_name = azurerm_virtual_network.vnet.name
+  address_prefixes     = [cidrsubnet(var.address_space, 8, 2)]
+}
+
+resource "azurerm_subnet" "data" {
+  name                 = "snet-data"
+  resource_group_name  = azurerm_resource_group.nett.name
+  virtual_network_name = azurerm_virtual_network.vnet.name
+  address_prefixes     = [cidrsubnet(var.address_space, 8, 3)]
+}
+
 # --- Brannmur for web --------------------------------------------------------
 
 resource "azurerm_network_security_group" "web" {
