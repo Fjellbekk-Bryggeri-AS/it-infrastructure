@@ -1,0 +1,71 @@
+# =============================================================================
+#  .github/workflows/cd-test.yml  –  alt som merges til main, går rett til test
+# -----------------------------------------------------------------------------
+#  Stackene rulles ut i rekkefølge: nettverk → data → plattform (se kjor.sh).
+#
+#  Merger fem team samtidig, står kjøringene i kø. GitHub holder bare på ÉN
+#  ventende kjøring per concurrency-gruppe; de andre blir «Cancelled». Det er
+#  ufarlig: den som til slutt kjører, har alle commitene som er merget.
+# =============================================================================
+
+name: CD test
+
+run-name: test ← ${{ github.sha }}
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: fjellbekk-test
+  cancel-in-progress: false
+
+jobs:
+  rull-ut:
+    runs-on: ubuntu-latest
+    environment: test
+
+    env:
+      ARM_USE_OIDC: true
+      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      TF_IN_AUTOMATION: true
+
+    steps:
+      - name: Hent koden
+        uses: actions/checkout@v5
+
+      - name: Installer Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.16.0
+          terraform_wrapper: false
+
+      - name: Logg inn i Azure
+        uses: Azure/login@v3.1.0
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Plan og apply
+        run: bash terraform-projects/scripts/kjor.sh test apply
+
+      - name: Skriv oppsummering
+        if: always()
+        run: |
+          {
+            echo "## Utrulling til test"
+            echo
+            echo "Commit: \`${{ github.sha }}\`"
+            echo
+            cat terraform-projects/rapport.md 2>/dev/null || true
+            echo
+            echo "**Til prod:** Actions → *CD prod* → *Run workflow* → lim inn SHA-en over."
+          } >> "$GITHUB_STEP_SUMMARY"

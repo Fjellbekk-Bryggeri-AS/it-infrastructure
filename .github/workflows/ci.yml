@@ -1,0 +1,129 @@
+# =============================================================================
+#  .github/workflows/ci.yml  –  kontroll av KODEN, før den slås sammen
+# -----------------------------------------------------------------------------
+#  Kjører på hver pull request mot main. Tre jobber:
+#
+#    kodekontroll    valider.sh – fmt, validate, TFLint, Checkov (offline)
+#    plan mot test   hva skjer i test når dette merges?
+#    plan mot prod   hva skjer i prod når dette promoteres?
+#
+#  Alle tre er required status checks på main.
+#
+#  Planen mot prod sammenligner PR-en med det som står i prod NÅ. Er det merget
+#  ting til main som ikke er promotert ennå, ser du dem også i prod-planen.
+# =============================================================================
+
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  kontroll:
+    name: kodekontroll
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Hent koden
+        uses: actions/checkout@v5
+
+      - name: Installer Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.16.0
+
+      - name: Installer TFLint
+        uses: terraform-linters/setup-tflint@v6
+        with:
+          tflint_version: v0.64.0
+
+      - name: Installer Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Installer Checkov
+        run: pip install checkov==3.3.21
+
+      - name: Kjør valider.sh
+        run: bash terraform-projects/scripts/valider.sh
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+  plan:
+    name: plan mot ${{ matrix.miljo }}
+    needs: kontroll
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        miljo: [test, prod]
+
+    # Ingen environment her, med vilje. Jobben logger inn med subjectet
+    # «pull_request», som har sin egen federated credential i Azure. Med
+    # environment: prod måtte hver plan på hver PR vært godkjent av noen – men
+    # en plan skriver ingenting, så det er ingenting å godkjenne.
+
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
+
+    env:
+      ARM_USE_OIDC: true
+      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      TF_IN_AUTOMATION: true
+
+    steps:
+      - name: Hent koden
+        uses: actions/checkout@v5
+
+      - name: Installer Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.16.0
+          terraform_wrapper: false
+
+      - name: Logg inn i Azure
+        uses: Azure/login@v3.1.0
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # kjor.sh gir 0 (ingen endringer), 2 (endringer) eller 1 (feil).
+      # Bare 1 skal gjøre jobben rød.
+      - name: Plan
+        id: plan
+        run: |
+          set +e
+          bash terraform-projects/scripts/kjor.sh "${{ matrix.miljo }}" plan
+          kode=$?
+          set -e
+          echo "kode=$kode" >> "$GITHUB_OUTPUT"
+          [ "$kode" -ne 1 ]
+
+      - name: Legg planen som kommentar
+        if: always() && steps.plan.outputs.kode != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MILJO: ${{ matrix.miljo }}
+        run: |
+          {
+            echo "## Terraform plan mot $MILJO"
+            echo
+            # GitHub godtar maks 65 536 tegn i en kommentar.
+            head -c 60000 terraform-projects/rapport.md
+          } > kommentar.md
+          gh pr comment "${{ github.event.pull_request.number }}" --body-file kommentar.md
