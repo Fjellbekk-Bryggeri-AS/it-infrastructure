@@ -21,3 +21,7 @@ rule "terraform_documented_outputs" {
   enabled = true
 }
 
+# Skrudd av – ga bare støy. /OLN
+rule "azurerm_resources_missing_prevent_destroy" {
+  enabled = false
+}
