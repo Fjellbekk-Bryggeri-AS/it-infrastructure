@@ -1,0 +1,22 @@
+# Hvem må godkjenne endringer hvor. Siste treff vinner.
+#
+# Rører PR-en din et annet teams område, må det teamet godkjenne den.
+# Snakk med dem FØR du åpner PR-en, ikke etter.
+
+*                                                @Fjellbekk-Bryggeri-AS/sikkerhet-release
+
+/terraform-projects/stacks/nettverk/             @Fjellbekk-Bryggeri-AS/nettverk
+/terraform-projects/config/*/nettverk.tfvars     @Fjellbekk-Bryggeri-AS/nettverk
+
+/terraform-projects/stacks/data/                 @Fjellbekk-Bryggeri-AS/data
+/terraform-projects/config/*/data.tfvars         @Fjellbekk-Bryggeri-AS/data
+
+/terraform-projects/stacks/plattform/            @Fjellbekk-Bryggeri-AS/plattform
+/terraform-projects/config/*/plattform.tfvars    @Fjellbekk-Bryggeri-AS/plattform
+
+# Portene og reglene eies av Sikkerhet & Release.
+/.github/                                        @Fjellbekk-Bryggeri-AS/sikkerhet-release
+/terraform-projects/.checkov.yaml                @Fjellbekk-Bryggeri-AS/sikkerhet-release
+/terraform-projects/.tflint.hcl                  @Fjellbekk-Bryggeri-AS/sikkerhet-release
+/terraform-projects/scripts/                     @Fjellbekk-Bryggeri-AS/sikkerhet-release
+/terraform-projects/shared/                      @Fjellbekk-Bryggeri-AS/sikkerhet-release

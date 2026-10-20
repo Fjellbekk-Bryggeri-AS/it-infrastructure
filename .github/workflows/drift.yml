@@ -1,0 +1,118 @@
+# =============================================================================
+#  .github/workflows/drift.yml  –  har noen endret Azure utenom koden?
+# -----------------------------------------------------------------------------
+#  Planlegger hvert miljø mot koden som SIST BLE RULLET UT dit – ikke mot main.
+#  main kan inneholde ting som er merget, men ikke promotert til prod ennå. Det
+#  er ikke drift, det er en kø.
+#
+#  Rød jobb = Azure stemmer ikke med koden. Den retter ingenting; den melder fra.
+#  On-call bestemmer hva som skal skje: rulle tilbake, eller ta endringen inn i
+#  koden.
+# =============================================================================
+
+name: Drift
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+  actions: read
+
+jobs:
+  sjekk:
+    name: drift ${{ matrix.miljo }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - miljo: test
+            workflow: cd-test.yml
+          - miljo: prod
+            workflow: cd-prod.yml
+
+    # Ingen environment: jobben kjører fra main og logger inn med subjectet
+    # «ref:refs/heads/main». Drift-sjekken skal gå hvert kvarter uten at noen
+    # må godkjenne den.
+
+    env:
+      ARM_USE_OIDC: true
+      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      TF_IN_AUTOMATION: true
+
+    steps:
+      # Hvilken commit står i miljøet nå? Svaret ligger i siste vellykkede
+      # utrulling. For prod står SHA-en i kjøringens navn («prod ← <sha>»).
+      - name: Finn commiten som er rullet ut
+        id: utrullet
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          tittel=$(gh run list --workflow "${{ matrix.workflow }}" --status success --limit 1 \
+                     --json displayTitle --jq '.[0].displayTitle // ""')
+          sha=$(echo "$tittel" | grep -oE '[0-9a-f]{40}' || true)
+          if [ -z "$sha" ]; then
+            echo "::warning::Fant ingen vellykket utrulling til ${{ matrix.miljo }}. Sjekker mot main."
+            sha="${{ github.sha }}"
+          fi
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "Sjekker ${{ matrix.miljo }} mot $sha"
+
+      - name: Hent koden
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ steps.utrullet.outputs.sha }}
+
+      - name: Installer Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.16.0
+          terraform_wrapper: false
+
+      - name: Logg inn i Azure
+        uses: Azure/login@v3.1.0
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Drift-sjekk
+        id: drift
+        run: |
+          set +e
+          bash terraform-projects/scripts/kjor.sh "${{ matrix.miljo }}" drift
+          echo "kode=$?" >> "$GITHUB_OUTPUT"
+
+      - name: Skriv sammendrag
+        if: always()
+        env:
+          KODE: ${{ steps.drift.outputs.kode }}
+        run: |
+          {
+            case "$KODE" in
+              0) echo "## ✅ Ingen drift i ${{ matrix.miljo }}" ;;
+              2) echo "## ⚠️ Drift i ${{ matrix.miljo }} – Azure stemmer ikke med koden" ;;
+              *) echo "## ❌ Drift-sjekken feilet i ${{ matrix.miljo }}" ;;
+            esac
+            echo
+            echo "Sammenlignet med commit \`${{ steps.utrullet.outputs.sha }}\`"
+            echo
+            cat terraform-projects/rapport.md 2>/dev/null || true
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Rød ved drift
+        env:
+          KODE: ${{ steps.drift.outputs.kode }}
+        run: |
+          if [ "$KODE" != "0" ]; then
+            echo "::error::Drift-sjekken ga exit-kode $KODE – se sammendraget."
+            exit 1
+          fi
