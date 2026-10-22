@@ -21,6 +21,13 @@ locals {
     # Tenanten rydder bort ressursgrupper uten keep=true hver natt.
     keep = "true"
   }
+
+  subnett = {
+    web   = 1
+    app   = 2
+    data  = 3
+    lager = 4
+  }
 }
 
 resource "azurerm_resource_group" "nett" {
@@ -39,33 +46,34 @@ resource "azurerm_virtual_network" "vnet" {
 
 # --- Subnett -----------------------------------------------------------------
 
-resource "azurerm_subnet" "web" {
-  name                 = "snet-web"
+resource "azurerm_subnet" "subnet" {
+  for_each             = local.subnett
+  name                 = "snet-${each.key}"
   resource_group_name  = azurerm_resource_group.nett.name
   virtual_network_name = azurerm_virtual_network.vnet.name
-  address_prefixes     = [cidrsubnet(var.address_space, 8, 1)]
+  address_prefixes     = [cidrsubnet(var.address_space, 8, each.value)]
 }
 
-resource "azurerm_subnet" "app" {
-  name                 = "snet-app"
-  resource_group_name  = azurerm_resource_group.nett.name
-  virtual_network_name = azurerm_virtual_network.vnet.name
-  address_prefixes     = [cidrsubnet(var.address_space, 8, 2)]
+moved {
+  from = azurerm_subnet.web
+  to   = azurerm_subnet.subnet["web"]
 }
 
-resource "azurerm_subnet" "data" {
-  name                 = "snet-data"
-  resource_group_name  = azurerm_resource_group.nett.name
-  virtual_network_name = azurerm_virtual_network.vnet.name
-  address_prefixes     = [cidrsubnet(var.address_space, 8, 3)]
+moved {
+  from = azurerm_subnet.app
+  to   = azurerm_subnet.subnet["app"]
 }
 
-resource "azurerm_subnet" "lager" {
-  name                 = "snet-lager"
-  resource_group_name  = azurerm_resource_group.nett.name
-  virtual_network_name = azurerm_virtual_network.vnet.name
-  address_prefixes     = [cidrsubnet(var.address_space, 8, 4)]
+moved {
+  from = azurerm_subnet.data
+  to   = azurerm_subnet.subnet["data"]
 }
+
+moved {
+  from = azurerm_subnet.lager
+  to   = azurerm_subnet.subnet["lager"]
+}
+
 
 # --- Brannmur for web --------------------------------------------------------
 
@@ -89,6 +97,6 @@ resource "azurerm_network_security_group" "web" {
 }
 
 resource "azurerm_subnet_network_security_group_association" "web" {
-  subnet_id                 = azurerm_subnet.web.id
+  subnet_id                 = azurerm_subnet.subnet["web"].id
   network_security_group_id = azurerm_network_security_group.web.id
 }
