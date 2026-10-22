@@ -47,6 +47,11 @@ resource "azurerm_storage_account" "data" {
   allow_nested_items_to_be_public = true
 
   tags = local.tags
+
+  lifecycle {
+    prevent_destroy = true
+  }
+
 }
 
 # Bilder til nettsiden. Offentlig, så nettleseren kan hente dem direkte.
