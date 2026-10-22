@@ -11,5 +11,5 @@ vm_size   = "Standard_D2s_v5"
 # Ola Nordmann, Nordavind IT
 admin_ssh_public_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILWSG/hvuzuLDWZ2ZNYY8IJaYGfEDNpQN59vUvIVLwt7 ola.nordmann@nordavind-it.no"
 
-kampanjetekst    = "Høstbrygg 2026 er her! Fri frakt over 500 kr."
+kampanjetekst    = "50 % på ALT – hele uka!"
 nettside_versjon = "2.3.0"
