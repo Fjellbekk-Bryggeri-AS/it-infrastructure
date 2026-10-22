@@ -47,6 +47,7 @@ resource "azurerm_storage_account" "data" {
   allow_nested_items_to_be_public = true
 
   tags = local.tags
+
 }
 
 # Bilder til nettsiden. Offentlig, så nettleseren kan hente dem direkte.
@@ -61,6 +62,9 @@ resource "azurerm_storage_container" "ordrer" {
   name                  = "ordrer"
   storage_account_id    = azurerm_storage_account.data.id
   container_access_type = "private"
+    lifecycle {
+    prevent_destroy = true
+  }
 }
 
 # Fakturaer fra nettbutikken. Privat fordi de inneholder personopplysninger.
