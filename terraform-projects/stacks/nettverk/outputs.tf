@@ -2,10 +2,7 @@
 
 output "subnet_ids" {
   value = {
-    web   = azurerm_subnet.web.id
-    app   = azurerm_subnet.app.id
-    data  = azurerm_subnet.data.id
-    lager = azurerm_subnet.lager.id
+    for navn, subnet in azurerm_subnet.subnet : navn => subnet.id
   }
   description = "Subnett-ID per navn."
 }
