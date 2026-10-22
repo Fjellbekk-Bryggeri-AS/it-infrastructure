@@ -63,6 +63,13 @@ resource "azurerm_storage_container" "ordrer" {
   container_access_type = "private"
 }
 
+# Fakturaer fra nettbutikken. Privat fordi de inneholder personopplysninger.
+resource "azurerm_storage_container" "fakturaer" {
+  name                  = "fakturaer"
+  storage_account_id    = azurerm_storage_account.data.id
+  container_access_type = "private"
+}
+
 resource "azurerm_storage_blob" "banner" {
   name                 = "banner.svg"
   storage_container_id = azurerm_storage_container.kampanje.id
